@@ -31,10 +31,8 @@ interface Evaluator {
   institution: string;
   contact_email: string;
   status: string;
-  profile: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  user_id: string;
+  full_name?: string; // Added directly to the evaluator object
 }
 
 interface EvaluatorFormValues {
@@ -70,7 +68,7 @@ export const EvaluatorTable = () => {
   useEffect(() => {
     if (currentEvaluator) {
       form.reset({
-        full_name: currentEvaluator.profile?.full_name || "",
+        full_name: currentEvaluator.full_name || "",
         specialization: currentEvaluator.specialization || "",
         institution: currentEvaluator.institution || "",
         contact_email: currentEvaluator.contact_email || "",
@@ -90,17 +88,36 @@ export const EvaluatorTable = () => {
   const fetchEvaluators = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch the evaluators
+      const { data: evaluatorsData, error: evaluatorsError } = await supabase
         .from("evaluators")
-        .select(`
-          *,
-          profile: profiles(full_name, avatar_url)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (evaluatorsError) throw evaluatorsError;
 
-      setEvaluators(data || []);
+      // Then fetch profiles separately
+      const evaluatorUserIds = evaluatorsData.map(evaluator => evaluator.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", evaluatorUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to full_name
+      const profileMap = new Map();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.id, profile.full_name);
+      });
+
+      // Merge the data
+      const mergedEvaluators = evaluatorsData.map(evaluator => ({
+        ...evaluator,
+        full_name: profileMap.get(evaluator.user_id) || "N/A"
+      }));
+
+      setEvaluators(mergedEvaluators);
     } catch (error) {
       console.error("Error fetching evaluators:", error);
       toast({
@@ -116,7 +133,7 @@ export const EvaluatorTable = () => {
   const filteredEvaluators = evaluators.filter((evaluator) => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      evaluator.profile?.full_name?.toLowerCase().includes(searchLower) ||
+      evaluator.full_name?.toLowerCase().includes(searchLower) ||
       evaluator.specialization?.toLowerCase().includes(searchLower) ||
       evaluator.institution?.toLowerCase().includes(searchLower) ||
       evaluator.contact_email?.toLowerCase().includes(searchLower)
@@ -187,7 +204,7 @@ export const EvaluatorTable = () => {
             <TableBody>
               {filteredEvaluators.map((evaluator) => (
                 <TableRow key={evaluator.id}>
-                  <TableCell>{evaluator.profile?.full_name || "N/A"}</TableCell>
+                  <TableCell>{evaluator.full_name || "N/A"}</TableCell>
                   <TableCell>{evaluator.specialization}</TableCell>
                   <TableCell>{evaluator.institution}</TableCell>
                   <TableCell>{evaluator.contact_email}</TableCell>

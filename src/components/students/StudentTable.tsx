@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,10 +32,8 @@ interface Student {
   program: string;
   grade_level: string;
   status: string;
-  profile: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  user_id: string;
+  full_name?: string; // Added directly to the student object
 }
 
 interface StudentFormValues {
@@ -74,8 +71,8 @@ export const StudentTable = () => {
   useEffect(() => {
     if (currentStudent) {
       form.reset({
-        full_name: currentStudent.profile?.full_name || "",
-        student_id: currentStudent.student_id,
+        full_name: currentStudent.full_name || "",
+        student_id: currentStudent.student_id || "",
         institution: currentStudent.institution || "",
         program: currentStudent.program || "",
         grade_level: currentStudent.grade_level || "",
@@ -96,17 +93,36 @@ export const StudentTable = () => {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch the students
+      const { data: studentsData, error: studentsError } = await supabase
         .from("students")
-        .select(`
-          *,
-          profile: profiles(full_name, avatar_url)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (studentsError) throw studentsError;
 
-      setStudents(data || []);
+      // Then fetch profiles separately
+      const studentUserIds = studentsData.map(student => student.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", studentUserIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to full_name
+      const profileMap = new Map();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.id, profile.full_name);
+      });
+
+      // Merge the data
+      const mergedStudents = studentsData.map(student => ({
+        ...student,
+        full_name: profileMap.get(student.user_id) || "N/A"
+      }));
+
+      setStudents(mergedStudents);
     } catch (error) {
       console.error("Error fetching students:", error);
       toast({
@@ -122,7 +138,7 @@ export const StudentTable = () => {
   const filteredStudents = students.filter((student) => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      student.profile?.full_name?.toLowerCase().includes(searchLower) ||
+      student.full_name?.toLowerCase().includes(searchLower) ||
       student.student_id?.toLowerCase().includes(searchLower) ||
       student.institution?.toLowerCase().includes(searchLower) ||
       student.program?.toLowerCase().includes(searchLower)
@@ -194,7 +210,7 @@ export const StudentTable = () => {
             <TableBody>
               {filteredStudents.map((student) => (
                 <TableRow key={student.id}>
-                  <TableCell>{student.profile?.full_name || "N/A"}</TableCell>
+                  <TableCell>{student.full_name || "N/A"}</TableCell>
                   <TableCell>{student.student_id}</TableCell>
                   <TableCell>{student.institution}</TableCell>
                   <TableCell>{student.program}</TableCell>
