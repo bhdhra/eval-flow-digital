@@ -1,16 +1,63 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, Clock, Check, AlertTriangle } from "lucide-react";
+import { Search, Clock, Check, AlertTriangle, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { toast } from "sonner";
+
+// Define types for our evaluations
+interface PendingEvaluation {
+  id: string;
+  title: string;
+  course: string;
+  student: string;
+  dateAssigned: string;
+  deadline: string;
+  type: string;
+  isUrgent?: boolean;
+}
+
+interface CompletedEvaluation {
+  id: string;
+  title: string;
+  course: string;
+  student: string;
+  dateEvaluated: string;
+  grade: string;
+  score: string;
+}
 
 const Evaluations = () => {
+  // State for the evaluation dialog
+  const [isEvaluationDialogOpen, setIsEvaluationDialogOpen] = useState(false);
+  const [currentEvaluation, setCurrentEvaluation] = useState<PendingEvaluation | null>(null);
+  const [grade, setGrade] = useState("B");
+  const [score, setScore] = useState("85");
+  const [comments, setComments] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Mock evaluation data
-  const pendingEvaluations = [
+  const [pendingEvaluations, setPendingEvaluations] = useState<PendingEvaluation[]>([
     {
       id: "SUB-2023-001",
       title: "Final Project",
@@ -48,9 +95,9 @@ const Evaluations = () => {
       type: "PDF Document",
       isUrgent: true,
     },
-  ];
+  ]);
 
-  const completedEvaluations = [
+  const [completedEvaluations, setCompletedEvaluations] = useState<CompletedEvaluation[]>([
     {
       id: "SUB-2023-002",
       title: "Programming Assignment",
@@ -78,7 +125,62 @@ const Evaluations = () => {
       grade: "A-",
       score: "90/100",
     },
-  ];
+  ]);
+
+  // Function to handle opening the evaluation dialog
+  const handleEvaluate = (evaluation: PendingEvaluation) => {
+    setCurrentEvaluation(evaluation);
+    setIsEvaluationDialogOpen(true);
+  };
+
+  // Function to handle submission of an evaluation
+  const handleSubmitEvaluation = () => {
+    if (!currentEvaluation) return;
+
+    // Create a new completed evaluation
+    const newCompletedEvaluation: CompletedEvaluation = {
+      id: currentEvaluation.id,
+      title: currentEvaluation.title,
+      course: currentEvaluation.course,
+      student: currentEvaluation.student,
+      dateEvaluated: new Date().toISOString().split('T')[0],
+      grade: grade,
+      score: `${score}/100`,
+    };
+
+    // Add to completed evaluations
+    setCompletedEvaluations([newCompletedEvaluation, ...completedEvaluations]);
+
+    // Remove from pending evaluations
+    setPendingEvaluations(pendingEvaluations.filter(e => e.id !== currentEvaluation.id));
+
+    // Close the dialog and reset the form
+    setIsEvaluationDialogOpen(false);
+    setCurrentEvaluation(null);
+    setGrade("B");
+    setScore("85");
+    setComments("");
+
+    // Show a success toast
+    toast.success("Evaluation submitted successfully!");
+  };
+
+  // Filter evaluations based on search query
+  const filteredPendingEvaluations = pendingEvaluations.filter(
+    (eval) =>
+      eval.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCompletedEvaluations = completedEvaluations.filter(
+    (eval) =>
+      eval.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      eval.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <MainLayout>
@@ -100,14 +202,14 @@ const Evaluations = () => {
                     <Clock className="mr-2 h-4 w-4" />
                     Pending
                     <Badge variant="secondary" className="ml-2">
-                      {pendingEvaluations.length}
+                      {filteredPendingEvaluations.length}
                     </Badge>
                   </TabsTrigger>
                   <TabsTrigger value="completed" className="flex items-center">
                     <Check className="mr-2 h-4 w-4" />
                     Completed
                     <Badge variant="secondary" className="ml-2">
-                      {completedEvaluations.length}
+                      {filteredCompletedEvaluations.length}
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
@@ -117,94 +219,80 @@ const Evaluations = () => {
                   <Input
                     placeholder="Search evaluations..."
                     className="pl-10 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
 
               <TabsContent value="pending" className="mt-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b">
-                      <tr>
-                        <th className="text-left py-3 px-4 text-sm">ID</th>
-                        <th className="text-left py-3 px-4 text-sm">Title</th>
-                        <th className="text-left py-3 px-4 text-sm">Course</th>
-                        <th className="text-left py-3 px-4 text-sm">Student</th>
-                        <th className="text-left py-3 px-4 text-sm">Assigned</th>
-                        <th className="text-left py-3 px-4 text-sm">Deadline</th>
-                        <th className="text-left py-3 px-4 text-sm">Type</th>
-                        <th className="text-right py-3 px-4 text-sm"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pendingEvaluations.map((evaluation, index) => (
-                        <tr key={index} className="hover:bg-muted/50">
-                          <td className="py-3 px-4 text-sm">{evaluation.id}</td>
-                          <td className="py-3 px-4 text-sm font-medium flex items-center">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Course</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Assigned</TableHead>
+                        <TableHead>Deadline</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPendingEvaluations.map((evaluation) => (
+                        <TableRow key={evaluation.id} className="hover:bg-muted/50">
+                          <TableCell>{evaluation.id}</TableCell>
+                          <TableCell className="font-medium flex items-center">
                             {evaluation.isUrgent && (
                               <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
                             )}
                             {evaluation.title}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.course}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.student}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.dateAssigned}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.deadline}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
+                          </TableCell>
+                          <TableCell>{evaluation.course}</TableCell>
+                          <TableCell>{evaluation.student}</TableCell>
+                          <TableCell>{evaluation.dateAssigned}</TableCell>
+                          <TableCell>{evaluation.deadline}</TableCell>
+                          <TableCell>
                             <Badge variant="outline">{evaluation.type}</Badge>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <Button size="sm">Evaluate</Button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" onClick={() => handleEvaluate(evaluation)}>
+                              Evaluate
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
 
               <TabsContent value="completed" className="mt-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b">
-                      <tr>
-                        <th className="text-left py-3 px-4 text-sm">ID</th>
-                        <th className="text-left py-3 px-4 text-sm">Title</th>
-                        <th className="text-left py-3 px-4 text-sm">Course</th>
-                        <th className="text-left py-3 px-4 text-sm">Student</th>
-                        <th className="text-left py-3 px-4 text-sm">
-                          Date Evaluated
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm">Grade</th>
-                        <th className="text-left py-3 px-4 text-sm">Score</th>
-                        <th className="text-right py-3 px-4 text-sm"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {completedEvaluations.map((evaluation, index) => (
-                        <tr key={index} className="hover:bg-muted/50">
-                          <td className="py-3 px-4 text-sm">{evaluation.id}</td>
-                          <td className="py-3 px-4 text-sm font-medium">
-                            {evaluation.title}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.course}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.student}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.dateEvaluated}
-                          </td>
-                          <td className="py-3 px-4 text-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Course</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Date Evaluated</TableHead>
+                        <TableHead>Grade</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead className="text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCompletedEvaluations.map((evaluation) => (
+                        <TableRow key={evaluation.id} className="hover:bg-muted/50">
+                          <TableCell>{evaluation.id}</TableCell>
+                          <TableCell className="font-medium">{evaluation.title}</TableCell>
+                          <TableCell>{evaluation.course}</TableCell>
+                          <TableCell>{evaluation.student}</TableCell>
+                          <TableCell>{evaluation.dateEvaluated}</TableCell>
+                          <TableCell>
                             <Badge
                               className={`${
                                 evaluation.grade.startsWith("A")
@@ -217,25 +305,105 @@ const Evaluations = () => {
                             >
                               {evaluation.grade}
                             </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-sm">
-                            {evaluation.score}
-                          </td>
-                          <td className="py-3 px-4 text-right">
+                          </TableCell>
+                          <TableCell>{evaluation.score}</TableCell>
+                          <TableCell className="text-right">
                             <Button size="sm" variant="outline">
                               View
                             </Button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       </div>
+
+      {/* Evaluation Dialog */}
+      <Dialog open={isEvaluationDialogOpen} onOpenChange={setIsEvaluationDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Evaluate Submission</DialogTitle>
+            <DialogDescription>
+              {currentEvaluation && (
+                <div className="flex items-center mt-2">
+                  <FileText className="mr-2 h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">{currentEvaluation.title}</span>
+                  <span className="mx-2 text-muted-foreground">•</span>
+                  <span>{currentEvaluation.student}</span>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="grade" className="text-sm font-medium">
+                  Grade
+                </label>
+                <select
+                  id="grade"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                >
+                  <option value="A+">A+</option>
+                  <option value="A">A</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B">B</option>
+                  <option value="B-">B-</option>
+                  <option value="C+">C+</option>
+                  <option value="C">C</option>
+                  <option value="C-">C-</option>
+                  <option value="D">D</option>
+                  <option value="F">F</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="score" className="text-sm font-medium">
+                  Score (out of 100)
+                </label>
+                <Input
+                  id="score"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={score}
+                  onChange={(e) => setScore(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="comments" className="text-sm font-medium">
+                Feedback Comments
+              </label>
+              <textarea
+                id="comments"
+                className="h-32 w-full rounded-md border border-input bg-background px-3 py-2"
+                placeholder="Provide detailed feedback on the submission..."
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEvaluationDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitEvaluation}>Submit Evaluation</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
