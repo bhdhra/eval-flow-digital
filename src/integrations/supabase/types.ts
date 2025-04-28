@@ -9,7 +9,135 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          allow_registration: boolean | null
+          id: number
+          logo_url: string | null
+          maintenance_mode: boolean | null
+          site_name: string | null
+          theme_color: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_registration?: boolean | null
+          id?: number
+          logo_url?: string | null
+          maintenance_mode?: boolean | null
+          site_name?: string | null
+          theme_color?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_registration?: boolean | null
+          id?: number
+          logo_url?: string | null
+          maintenance_mode?: boolean | null
+          site_name?: string | null
+          theme_color?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      evaluators: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          institution: string | null
+          specialization: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          institution?: string | null
+          specialization?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          institution?: string | null
+          specialization?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          created_at: string
+          grade_level: string | null
+          id: string
+          institution: string | null
+          program: string | null
+          status: string | null
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade_level?: string | null
+          id?: string
+          institution?: string | null
+          program?: string | null
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grade_level?: string | null
+          id?: string
+          institution?: string | null
+          program?: string | null
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
