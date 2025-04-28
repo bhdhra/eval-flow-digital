@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -167,19 +166,19 @@ const Evaluations = () => {
 
   // Filter evaluations based on search query
   const filteredPendingEvaluations = pendingEvaluations.filter(
-    (eval) =>
-      eval.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (evaluation) =>
+      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredCompletedEvaluations = completedEvaluations.filter(
-    (eval) =>
-      eval.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eval.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (evaluation) =>
+      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.student.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evaluation.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
